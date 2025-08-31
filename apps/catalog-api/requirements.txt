@@ -6,3 +6,9 @@ opensearch-py==2.4.2
 SQLAlchemy==2.0.32
 psycopg[binary]==3.2.9
 redis==5.0.7
+alembic==1.13.2
+fastavro==1.9.7
+opentelemetry-sdk==1.26.0
+opentelemetry-exporter-otlp==1.26.0
+opentelemetry-instrumentation-fastapi==0.47b0
+opentelemetry-instrumentation-sqlalchemy==0.47b0

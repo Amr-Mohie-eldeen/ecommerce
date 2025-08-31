@@ -18,6 +18,12 @@ class Product(BaseModel):
     updated_at: dt.datetime | None = None
 
 
+class ProductUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    price: float | None = Field(default=None, ge=0)
+    description: str | None = None
+
+
 class SearchResult(BaseModel):
     query: str
     results: list[Product]

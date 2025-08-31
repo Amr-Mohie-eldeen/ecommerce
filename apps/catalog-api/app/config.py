@@ -22,6 +22,14 @@ class Settings(BaseModel):
     )
 
     cache_ttl_seconds: int = int(os.getenv("CACHE_TTL_SECONDS", "30"))
+    search_cache_ttl_seconds: int = int(os.getenv("SEARCH_CACHE_TTL_SECONDS", "15"))
+    otlp_endpoint: str | None = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+    validate_avro: bool = os.getenv("VALIDATE_AVRO", "false").lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
 
 
 def get_settings() -> Settings:

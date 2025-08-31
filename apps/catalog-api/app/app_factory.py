@@ -1,17 +1,27 @@
 from __future__ import annotations
 
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response, HTTPException
 
 from .config import get_settings
 from . import db
 from .models import Base
-from .cache import init_redis
+from .cache import init_redis, ping as redis_ping
 from .routes import router
+from .errors import http_exception_handler
+from .search import ping as os_ping
+from opentelemetry import trace
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 
 
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(title="Catalog API", version="1.0.0")
+    app.add_exception_handler(HTTPException, http_exception_handler)
 
     # DB init (best-effort). If fails, app continues with in-memory repo.
     if settings.db_url:
@@ -25,7 +35,7 @@ def create_app() -> FastAPI:
 
     # Health
     @app.get("/healthz")
-    def healthz():
+    async def healthz():
         return {"status": "ok"}
 
     # Prometheus metrics endpoint
@@ -42,6 +52,17 @@ def create_app() -> FastAPI:
         payload = generate_latest()
         return Response(content=payload, media_type=CONTENT_TYPE_LATEST)
 
+    @app.get("/readyz")
+    async def readyz():
+        db_ok = await db.healthcheck() if settings.db_url else True
+        redis_ok = await redis_ping()
+        os_ok = os_ping()
+        ok = db_ok and os_ok  # redis optional
+        return {
+            "status": "ok" if ok else "degraded",
+            "checks": {"db": db_ok, "redis": redis_ok, "opensearch": os_ok},
+        }
+
     # Include routes
     app.include_router(router)
 
@@ -52,5 +73,24 @@ def create_app() -> FastAPI:
             await db.create_all(Base.metadata)
         except Exception:
             pass
+
+        # OpenTelemetry tracing setup (if endpoint configured)
+        if settings.otlp_endpoint:
+            try:
+                resource = Resource.create({"service.name": settings.service_name})
+                provider = TracerProvider(resource=resource)
+                trace.set_tracer_provider(provider)
+                exporter = OTLPSpanExporter(
+                    endpoint=settings.otlp_endpoint, insecure=True
+                )
+                provider.add_span_processor(BatchSpanProcessor(exporter))
+                FastAPIInstrumentor.instrument_app(app)
+                # SQLAlchemy engine may be None until DB configured; instrumentation is safe
+                SQLAlchemyInstrumentor().instrument(
+                    enable_commenter=True,
+                    commenter_options={"db_framework": "sqlalchemy"},
+                )
+            except Exception:
+                pass
 
     return app

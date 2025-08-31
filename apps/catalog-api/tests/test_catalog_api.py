@@ -40,6 +40,25 @@ def test_create_and_get_product():
     assert got["id"] == data["id"]
 
 
+def test_update_product():
+    # Create first
+    r = client.post("/products", json={"name": "A", "price": 1.0})
+    assert r.status_code == 201
+    pid = r.json()["id"]
+
+    # Update name and price
+    r2 = client.put(f"/products/{pid}", json={"name": "B", "price": 2.5})
+    assert r2.status_code == 200
+    body = r2.json()
+    assert body["name"] == "B"
+    assert body["price"] == 2.5
+
+    # Get should reflect updated values (may be cached)
+    r3 = client.get(f"/products/{pid}")
+    assert r3.status_code == 200
+    assert r3.json()["name"] == "B"
+
+
 def test_search_empty_results():
     r = client.get("/search", params={"q": "foo"})
     assert r.status_code == 200

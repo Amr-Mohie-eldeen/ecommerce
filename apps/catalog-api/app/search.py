@@ -51,3 +51,13 @@ def search_products(q: str) -> list[dict[str, Any]]:
         return items
     except Exception:
         return []
+
+
+def ping() -> bool:
+    client = get_search_client()
+    try:
+        if not client:
+            return False
+        return bool(client.ping())
+    except Exception:
+        return False
