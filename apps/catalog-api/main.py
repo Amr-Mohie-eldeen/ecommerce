@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, BackgroundTasks
 from pydantic import BaseModel, Field
 from typing import List
 from events import publish_product_updated
@@ -26,14 +26,15 @@ def healthz():
 
 
 @app.post("/products", status_code=201, response_model=Product)
-def create_product(body: ProductCreate):
+def create_product(body: ProductCreate, background_tasks: BackgroundTasks):
     # Stubbed persistence; return a predictable id for tests
     created = Product(
         id="p-1", name=body.name, price=body.price, description=body.description
     )
-    # Emit stub event
-    publish_product_updated(
-        {"id": created.id, "name": created.name, "price": created.price}
+    # Emit event in background (non-blocking)
+    background_tasks.add_task(
+        publish_product_updated,
+        {"id": created.id, "name": created.name, "price": created.price},
     )
     return created
 

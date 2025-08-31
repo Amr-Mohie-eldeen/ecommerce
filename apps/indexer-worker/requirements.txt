@@ -1,2 +1,2 @@
-# No web server required; keeping fastapi out. Minimal deps only.
-
+# No web server required; minimal deps only.
+aiokafka==0.10.0
