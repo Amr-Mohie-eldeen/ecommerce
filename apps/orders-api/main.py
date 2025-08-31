@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from pydantic import BaseModel, Field
 
 
@@ -19,6 +19,22 @@ app = FastAPI(title="Orders API", version="1.0.0")
 @app.get("/healthz")
 def healthz():
     return {"status": "ok"}
+
+
+# Prometheus metrics endpoint
+try:
+    from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+except Exception:  # pragma: no cover
+    CONTENT_TYPE_LATEST = "text/plain; version=0.0.4; charset=utf-8"
+
+    def generate_latest():  # type: ignore
+        return b""
+
+
+@app.get("/metrics")
+def metrics() -> Response:
+    payload = generate_latest()
+    return Response(content=payload, media_type=CONTENT_TYPE_LATEST)
 
 
 @app.post("/orders", status_code=201, response_model=Order)

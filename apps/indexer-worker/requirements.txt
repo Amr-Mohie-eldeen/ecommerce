@@ -1,2 +1,3 @@
 # No web server required; minimal deps only.
 aiokafka==0.10.0
+prometheus-client==0.20.0

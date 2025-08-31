@@ -65,6 +65,16 @@ def heartbeat():
 
 
 def main():
+    # Start Prometheus metrics HTTP server if available
+    try:
+        from prometheus_client import start_http_server
+
+        metrics_port = int(os.getenv("METRICS_PORT", "9104"))
+        start_http_server(metrics_port)
+        print(f"[{SERVICE}] metrics server on :{metrics_port}")
+    except Exception:
+        pass
+
     if kafka_enabled():
         try:
             asyncio.run(consume_loop())

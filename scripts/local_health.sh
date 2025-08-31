@@ -30,6 +30,7 @@ check_http http://localhost:8081 "Schema Registry"
 check_http http://localhost:9200 "OpenSearch"
 check_http http://localhost:5601 "OpenSearch Dashboards"
 check_http http://localhost:16686 "Jaeger UI"
+check_http http://localhost:9090 "Prometheus"
+check_http http://localhost:3000 "Grafana"
 
 echo "Done."
-

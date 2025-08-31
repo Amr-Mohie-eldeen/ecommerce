@@ -106,6 +106,23 @@ make local-down   # Stop all services
 - **Acceptance Criteria**: Dashboards accessible, metrics flowing
 - **Output**: `infra/70-addons/`
 
+## Observability (Local)
+
+- Tracing: Jaeger via OTEL exporter (local dev)
+- Metrics: Prometheus scrapes per-service `/metrics` endpoints
+  - catalog-api: `:8001/metrics`
+  - orders-api: `:8002/metrics`
+  - recommender-svc: `:8003/metrics`
+  - indexer-worker: Prometheus client HTTP server on `:9104`
+- Dashboards: Grafana (local dev) with Prometheus as datasource
+- Logs: stdout in containers, optional OpenSearch Dashboards for viewing
+
+Compose includes: PostgreSQL, Redis, Kafka + Zookeeper, Schema Registry, OpenSearch, Jaeger, Prometheus, Grafana.
+
+Golden signals to monitor:
+- Request rate, latency, error rate for APIs
+- Worker processing rate and lag (future additions)
+
 ### T4.2 Ingress and Security
 - **Components**: NGINX Ingress, External Secrets Operator
 - **Acceptance Criteria**: Public endpoints work, secrets projected
