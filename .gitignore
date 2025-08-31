@@ -1,0 +1,59 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors/IDE
+.vscode/
+.idea/
+.history/
+
+# Env & secrets
+.env
+.env.*
+*.env.local
+*.secret
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.python-version
+.venv/
+venv/
+.tox/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Node/TypeScript
+node_modules/
+dist/
+build/
+coverage/
+.nyc_output/
+
+# Go
+bin/
+*.test
+*.out
+coverage.out
+
+# Terraform (keep lock file tracked)
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.*
+
+# Logs
+*.log
+logs/
+
+# Docker/local data
+local/data/
+
+# Misc
+*.swp
+*.swo

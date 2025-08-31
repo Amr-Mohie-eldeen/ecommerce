@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "ProductUpdated",
+  "namespace": "events.catalog",
+  "fields": [
+    {"name": "event_id", "type": "string"},
+    {"name": "occurred_at", "type": "string"},
+    {"name": "product_id", "type": "string"},
+    {"name": "name", "type": "string"},
+    {"name": "description", "type": "string"},
+    {"name": "price", "type": "double"},
+    {"name": "stock_qty", "type": "int"},
+    {"name": "updated_at", "type": "string"}
+  ]
+}
+

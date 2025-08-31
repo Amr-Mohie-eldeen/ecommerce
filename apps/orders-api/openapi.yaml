@@ -1,0 +1,21 @@
+openapi: 3.1.0
+info:
+  title: Orders API
+  version: 1.0.0
+paths:
+  /orders:
+    post:
+      summary: Create order
+      responses:
+        '201': { description: Created }
+  /orders/{id}:
+    get:
+      summary: Get order by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+

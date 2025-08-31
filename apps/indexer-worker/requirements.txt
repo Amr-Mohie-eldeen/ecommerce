@@ -1,0 +1,2 @@
+# No web server required; keeping fastapi out. Minimal deps only.
+

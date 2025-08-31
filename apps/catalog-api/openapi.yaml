@@ -1,0 +1,31 @@
+openapi: 3.0.3
+info:
+  title: Catalog API
+  version: 1.0.0
+paths:
+  /products:
+    post:
+      summary: Create or update a product
+      responses:
+        '201': { description: Created }
+  /products/{id}:
+    get:
+      summary: Get product by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /search:
+    get:
+      summary: Search products
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+
