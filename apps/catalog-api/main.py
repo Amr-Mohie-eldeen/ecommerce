@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 from typing import List
-from .events import publish_product_updated
+from events import publish_product_updated
 
 
 class ProductCreate(BaseModel):
