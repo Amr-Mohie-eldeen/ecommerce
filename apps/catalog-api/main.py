@@ -1,7 +1,9 @@
+import os
 from fastapi import FastAPI, BackgroundTasks, Response
 from pydantic import BaseModel, Field
 from typing import List
 from events import publish_product_updated
+from opensearchpy import OpenSearch
 
 
 class ProductCreate(BaseModel):
@@ -18,6 +20,14 @@ class Product(BaseModel):
 
 
 app = FastAPI(title="Catalog API", version="1.0.0")
+
+
+def get_search_client():
+    try:
+        url = os.getenv("OPENSEARCH_URL", "http://localhost:9200")
+        return OpenSearch(hosts=[url])
+    except Exception:
+        return None
 
 
 @app.get("/healthz")
@@ -68,4 +78,34 @@ class SearchResult(BaseModel):
 
 @app.get("/search", response_model=SearchResult)
 def search(q: str):
-    return SearchResult(query=q, results=[])
+    client = get_search_client()
+    if not client or not q:
+        return SearchResult(query=q, results=[])
+    try:
+        res = client.search(
+            index="products",
+            body={
+                "size": 10,
+                "query": {
+                    "multi_match": {
+                        "query": q,
+                        "fields": ["name^2", "description"],
+                    }
+                },
+            },
+        )
+        hits = res.get("hits", {}).get("hits", [])
+        items = []
+        for h in hits:
+            src = h.get("_source", {})
+            items.append(
+                Product(
+                    id=src.get("product_id", h.get("_id")),
+                    name=src.get("name", ""),
+                    price=float(src.get("price", 0.0)),
+                    description=src.get("description"),
+                )
+            )
+        return SearchResult(query=q, results=items)
+    except Exception:
+        return SearchResult(query=q, results=[])

@@ -15,6 +15,49 @@ def kafka_enabled() -> bool:
     return os.getenv("ENABLE_KAFKA", "false").lower() in {"1", "true", "yes", "on"}
 
 
+# OpenSearch client setup
+_os_client = None
+
+
+def get_os_client():
+    global _os_client
+    if _os_client is not None:
+        return _os_client
+    try:
+        from opensearchpy import OpenSearch
+
+        url = os.getenv("OPENSEARCH_URL", "http://localhost:9200")
+        _os_client = OpenSearch(hosts=[url])
+        return _os_client
+    except Exception as e:
+        print(f"[{SERVICE}] OpenSearch client init failed: {e}")
+        return None
+
+
+def ensure_index(index: str = "products"):
+    client = get_os_client()
+    if client is None:
+        return
+    try:
+        if not client.indices.exists(index=index):
+            body = {
+                "settings": {"number_of_shards": 1, "number_of_replicas": 0},
+                "mappings": {
+                    "properties": {
+                        "product_id": {"type": "keyword"},
+                        "name": {"type": "text"},
+                        "description": {"type": "text"},
+                        "price": {"type": "float"},
+                        "updated_at": {"type": "date", "format": "epoch_millis"},
+                    }
+                },
+            }
+            client.indices.create(index=index, body=body)
+            print(f"[{SERVICE}] created index '{index}'")
+    except Exception as e:
+        print(f"[{SERVICE}] ensure_index error: {e}")
+
+
 async def consume_loop():
     if AIOKafkaConsumer is None:
         print(f"[{SERVICE}] aiokafka not installed; falling back to heartbeat.")
@@ -47,6 +90,9 @@ async def consume_loop():
                         print(
                             f"[{SERVICE}] received topic={msg.topic} key={key} value={val}"
                         )
+                        # Attempt to upsert into OpenSearch for product updates
+                        if msg.topic.endswith("product-updated"):
+                            upsert_product(val)
                     except Exception as e:
                         print(f"[{SERVICE}] error decoding message: {e}")
             finally:
@@ -54,6 +100,51 @@ async def consume_loop():
         except Exception as e:
             print(f"[{SERVICE}] Kafka consumer error: {e}. Retrying in 5s...")
             await asyncio.sleep(5)
+
+
+def upsert_product(raw: str, index: str = "products"):
+    """
+    Upsert product document using external_gte semantics with updated_at as version.
+    Expects JSON with keys: id, name, price, description?, updated_at(epoch millis)
+    """
+    import json
+
+    try:
+        data = json.loads(raw)
+    except Exception as e:
+        print(f"[{SERVICE}] invalid JSON payload: {e}")
+        return
+
+    client = get_os_client()
+    if client is None:
+        return
+
+    ensure_index(index)
+
+    doc_id = data.get("id") or data.get("product_id")
+    if not doc_id:
+        print(f"[{SERVICE}] missing product id in event: {data}")
+        return
+
+    version = int(data.get("updated_at", 0))
+    body = {
+        "product_id": doc_id,
+        "name": data.get("name"),
+        "description": data.get("description"),
+        "price": data.get("price"),
+        "updated_at": version,
+    }
+
+    try:
+        client.index(
+            index=index,
+            id=doc_id,
+            body=body,
+            params={"version": version, "version_type": "external_gte"},
+        )
+        print(f"[{SERVICE}] upserted product {doc_id} v{version}")
+    except Exception as e:
+        print(f"[{SERVICE}] OpenSearch upsert error: {e}")
 
 
 def heartbeat():

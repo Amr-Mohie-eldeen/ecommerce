@@ -3,6 +3,7 @@ import json
 import os
 import sys
 from typing import Any, Dict, Optional
+from datetime import datetime, timezone
 
 try:
     from aiokafka import AIOKafkaProducer
@@ -42,6 +43,9 @@ async def _ensure_producer() -> Optional["AIOKafkaProducer"]:
 
 async def publish_product_updated_async(event: Dict[str, Any]) -> None:
     topic = os.getenv("TOPIC_PRODUCT_UPDATED", "events.catalog.product-updated")
+    # ensure updated_at as epoch millis for external_gte semantics downstream
+    if "updated_at" not in event:
+        event["updated_at"] = int(datetime.now(timezone.utc).timestamp() * 1000)
     prod = await _ensure_producer()
     if prod is None:
         print(f"[events] ProductUpdated (stdout): {json.dumps(event)}", file=sys.stdout)
