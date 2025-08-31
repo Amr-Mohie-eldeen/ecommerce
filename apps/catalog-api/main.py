@@ -1,4 +1,21 @@
 from fastapi import FastAPI
+from pydantic import BaseModel, Field
+from typing import List
+from .events import publish_product_updated
+
+
+class ProductCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    price: float = Field(..., ge=0)
+    description: str | None = None
+
+
+class Product(BaseModel):
+    id: str
+    name: str
+    price: float
+    description: str | None = None
+
 
 app = FastAPI(title="Catalog API", version="1.0.0")
 
@@ -8,16 +25,30 @@ def healthz():
     return {"status": "ok"}
 
 
-@app.post("/products", status_code=201)
-def create_product():
-    return {"status": "ok", "message": "Product created (stub)"}
+@app.post("/products", status_code=201, response_model=Product)
+def create_product(body: ProductCreate):
+    # Stubbed persistence; return a predictable id for tests
+    created = Product(
+        id="p-1", name=body.name, price=body.price, description=body.description
+    )
+    # Emit stub event
+    publish_product_updated(
+        {"id": created.id, "name": created.name, "price": created.price}
+    )
+    return created
 
 
-@app.get("/products/{id}")
+@app.get("/products/{id}", response_model=Product)
 def get_product(id: str):
-    return {"id": id, "name": "demo", "price": 9.99}
+    # Stubbed read
+    return Product(id=id, name="demo", price=9.99, description=None)
 
 
-@app.get("/search")
+class SearchResult(BaseModel):
+    query: str
+    results: List[Product]
+
+
+@app.get("/search", response_model=SearchResult)
 def search(q: str):
-    return {"query": q, "results": []}
+    return SearchResult(query=q, results=[])

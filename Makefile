@@ -62,7 +62,7 @@ tools-venv:
 format: tools-venv
 	@echo "Running Black and Ruff --fix..."
 	$(BLACK) .
-	$(RUFF) --fix . || true
+	$(RUFF) check --fix . || true
 	@echo "Formatting complete."
 
 lint: tools-venv

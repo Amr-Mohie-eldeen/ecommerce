@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "Running local tests (stub)"
-echo "Tip: add per-service tests under apps/*/tests and update this script to invoke them."
+echo "Running local tests"
 
-# Example hooks (uncomment/adjust as you add code)
-# if command -v pytest >/dev/null 2>&1; then
-#   pytest -q
-# fi
+# Create an isolated venv for tests to avoid polluting app deps
+TEST_VENV=".venv-testtools"
+if [ ! -d "$TEST_VENV" ]; then
+  python3 -m venv "$TEST_VENV" || python -m venv "$TEST_VENV"
+fi
+"$TEST_VENV"/bin/pip install --upgrade pip >/dev/null
+"$TEST_VENV"/bin/pip install pytest httpx >/dev/null
 
-echo "No tests configured yet — exiting successfully."
+echo "Executing pytest under apps/*/tests"
+"$TEST_VENV"/bin/pytest -q apps
 
+echo "Tests complete."
