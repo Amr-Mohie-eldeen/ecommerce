@@ -27,7 +27,7 @@ help:
 	@echo "  install-git-hooks Install pre-commit hook to run format"
 
 local-up:
-	$(DC) up -d --remove-orphans
+	$(DC) up -d --build --remove-orphans
 
 local-down:
 	$(DC) down -v
