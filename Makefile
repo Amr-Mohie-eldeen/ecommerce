@@ -8,7 +8,8 @@ RUFF := $(TOOLS_VENV)/bin/ruff
 BLACK_VERSION := 24.4.2
 RUFF_VERSION := 0.5.5
 
-.PHONY: help local-up local-down local-logs local-health seed-data test-local create-topics dev-venv check-apps tools-venv format lint install-git-hooks
+.PHONY: help local-up local-down local-logs local-health seed-data test-local create-topics dev-venv check-apps tools-venv format lint install-git-hooks \
+	catalog-revision catalog-upgrade catalog-downgrade catalog-history catalog-current
 
 help:
 	@echo "Targets:"
@@ -25,6 +26,11 @@ help:
 	@echo "  format        Auto-format & autofix (Black, Ruff)"
 	@echo "  lint          Verify formatting/lint (CI equivalent)"
 	@echo "  install-git-hooks Install pre-commit hook to run format"
+	@echo "  catalog-revision  Create Alembic revision (msg=...)"
+	@echo "  catalog-upgrade   Apply latest DB migrations"
+	@echo "  catalog-downgrade STEP=-1 Revert migrations"
+	@echo "  catalog-history   Show migration history"
+	@echo "  catalog-current   Show current DB head"
 
 local-up:
 	$(DC) up -d --build --remove-orphans
@@ -80,3 +86,30 @@ install-git-hooks:
 	  > .git/hooks/pre-commit
 	@chmod +x .git/hooks/pre-commit
 	@echo "Pre-commit hook installed. Use SKIP format via `git commit --no-verify` if needed."
+
+# ----- Catalog API DB Migrations (Alembic) -----
+CAT_DIR := apps/catalog-api
+CAT_PY := $(CAT_DIR)/.venv/bin/python
+DB_URL ?= postgresql+psycopg://app:postgres@localhost:5432/appdb
+STEP ?= -1
+
+catalog-revision:
+	@if [ -z "$(msg)" ]; then echo "Usage: make catalog-revision msg=\"<message>\""; exit 1; fi
+	@if [ ! -x "$(CAT_PY)" ]; then echo "Missing $(CAT_DIR)/.venv. Run 'make dev-venv' first."; exit 1; fi
+	cd $(CAT_DIR) && DB_URL="$(DB_URL)" .venv/bin/python -m alembic revision --autogenerate -m "$(msg)"
+
+catalog-upgrade:
+	@if [ ! -x "$(CAT_PY)" ]; then echo "Missing $(CAT_DIR)/.venv. Run 'make dev-venv' first."; exit 1; fi
+	cd $(CAT_DIR) && DB_URL="$(DB_URL)" .venv/bin/python -m alembic upgrade head
+
+catalog-downgrade:
+	@if [ ! -x "$(CAT_PY)" ]; then echo "Missing $(CAT_DIR)/.venv. Run 'make dev-venv' first."; exit 1; fi
+	cd $(CAT_DIR) && DB_URL="$(DB_URL)" .venv/bin/python -m alembic downgrade $(STEP)
+
+catalog-history:
+	@if [ ! -x "$(CAT_PY)" ]; then echo "Missing $(CAT_DIR)/.venv. Run 'make dev-venv' first."; exit 1; fi
+	cd $(CAT_DIR) && DB_URL="$(DB_URL)" .venv/bin/python -m alembic history
+
+catalog-current:
+	@if [ ! -x "$(CAT_PY)" ]; then echo "Missing $(CAT_DIR)/.venv. Run 'make dev-venv' first."; exit 1; fi
+	cd $(CAT_DIR) && DB_URL="$(DB_URL)" .venv/bin/python -m alembic current
