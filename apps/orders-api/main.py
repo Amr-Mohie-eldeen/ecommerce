@@ -1,7 +1,4 @@
-import os
 from fastapi import FastAPI
-
-PORT = int(os.getenv("PORT", 8002))
 
 app = FastAPI(title="Orders API", version="1.0.0")
 
