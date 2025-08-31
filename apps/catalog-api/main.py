@@ -7,6 +7,7 @@ app = FastAPI(title="Catalog API", version="1.0.0")
 def healthz():
     return {"status": "ok"}
 
+
 @app.post("/products", status_code=201)
 def create_product():
     return {"status": "ok", "message": "Product created (stub)"}

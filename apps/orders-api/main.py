@@ -7,6 +7,7 @@ app = FastAPI(title="Orders API", version="1.0.0")
 def healthz():
     return {"status": "ok"}
 
+
 @app.post("/orders", status_code=201)
 def create_order():
     return {"status": "ok", "message": "Order created (stub)"}
