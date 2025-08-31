@@ -21,10 +21,10 @@ help:
 	@echo "  create-topics Create local Kafka topics"
 	@echo "  dev-venv      Create uv-managed venvs for apps"
 	@echo "  check-apps    HTTP health checks for app containers"
- 	@echo "  tools-venv    Create .venv-tools with Black & Ruff"
- 	@echo "  format        Auto-format & autofix (Black, Ruff)"
- 	@echo "  lint          Verify formatting/lint (CI equivalent)"
- 	@echo "  install-git-hooks Install pre-commit hook to run format"
+	@echo "  tools-venv    Create .venv-tools with Black & Ruff"
+	@echo "  format        Auto-format & autofix (Black, Ruff)"
+	@echo "  lint          Verify formatting/lint (CI equivalent)"
+	@echo "  install-git-hooks Install pre-commit hook to run format"
 
 local-up:
 	$(DC) up -d --remove-orphans
