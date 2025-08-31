@@ -3,3 +3,6 @@ uvicorn[standard]==0.30.0
 aiokafka==0.10.0
 prometheus-client==0.20.0
 opensearch-py==2.4.2
+SQLAlchemy==2.0.32
+asyncpg==0.29.0
+redis==5.0.7
