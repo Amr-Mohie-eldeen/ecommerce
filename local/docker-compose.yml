@@ -175,6 +175,10 @@ services:
     env_file:
       - ../.env
       - ../apps/indexer-worker/.env.example
+    environment:
+      - METRICS_PORT=9104
+    ports:
+      - "9104:9104"
 
 volumes:
   pg_data:
