@@ -19,4 +19,4 @@ COPY . .
 ENV VIRTUAL_ENV=/app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 EXPOSE 8002
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8002}"]
+CMD ["sh", "-c", "alembic upgrade head || true; uvicorn main:app --host 0.0.0.0 --port ${PORT:-8002}"]

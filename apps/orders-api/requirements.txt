@@ -1,3 +1,13 @@
 fastapi==0.111.0
 uvicorn[standard]==0.30.0
 prometheus-client==0.20.0
+SQLAlchemy==2.0.32
+psycopg[binary]==3.2.9
+redis==5.0.7
+aiokafka==0.10.0
+alembic==1.13.2
+opentelemetry-sdk==1.26.0
+opentelemetry-exporter-otlp==1.26.0
+opentelemetry-instrumentation-fastapi==0.47b0
+opentelemetry-instrumentation-sqlalchemy==0.47b0
+fastavro==1.9.7; python_version < "3.13"
