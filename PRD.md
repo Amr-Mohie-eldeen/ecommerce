@@ -115,6 +115,8 @@ make local-down   # Stop all services
   - recommender-svc: `:8003/metrics`
   - indexer-worker: Prometheus client HTTP server on `:9104`
 - Dashboards: Grafana (local dev) with Prometheus as datasource
+  - Provisioned via code: `local/configs/grafana/`
+  - Default dashboard: Ecommerce Overview (UP by job, CPU, memory)
 - Logs: stdout in containers, optional OpenSearch Dashboards for viewing
 
 Compose includes: PostgreSQL, Redis, Kafka + Zookeeper, Schema Registry, OpenSearch, Jaeger, Prometheus, Grafana.
