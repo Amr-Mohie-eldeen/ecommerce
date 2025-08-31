@@ -1,8 +1,12 @@
 from fastapi.testclient import TestClient
 from pathlib import Path
 import importlib.util
+import sys
 
 APP_DIR = Path(__file__).resolve().parents[1]
+APP_DIR_STR = str(APP_DIR)
+if APP_DIR_STR not in sys.path:
+    sys.path.insert(0, APP_DIR_STR)
 MAIN_PATH = APP_DIR / "main.py"
 
 spec = importlib.util.spec_from_file_location("orders_main", str(MAIN_PATH))
