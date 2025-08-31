@@ -166,6 +166,12 @@ def main():
     except Exception:
         pass
 
+    # Ensure index exists early
+    try:
+        ensure_index("products")
+    except Exception:
+        pass
+
     if kafka_enabled():
         try:
             asyncio.run(consume_loop())
