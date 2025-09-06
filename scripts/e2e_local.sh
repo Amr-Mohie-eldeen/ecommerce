@@ -26,6 +26,33 @@ TOPIC_PRODUCT_UPDATED=events.catalog.product-updated
 TOPIC_ORDER_CREATED=events.orders.order-created
 ENVEOF
 fi
+
+# Ensure per-service env examples exist for Compose
+ensure_env_example() {
+  local path="$1"
+  if [[ ! -f "$path" ]]; then
+    log "Creating missing env example: $path"
+    mkdir -p "$(dirname "$path")"
+    cat > "$path" <<'SVCENV'
+SERVICE_NAME=
+PORT=
+
+# Shared
+DB_URL=${DB_URL}
+REDIS_URL=${REDIS_URL}
+KAFKA_BOOTSTRAP=${KAFKA_BOOTSTRAP}
+SCHEMA_REG_URL=${SCHEMA_REG_URL}
+OPENSEARCH_URL=${OPENSEARCH_URL}
+OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}
+SVCENV
+  fi
+}
+
+ensure_env_example apps/catalog-api/.env.example
+ensure_env_example apps/orders-api/.env.example
+ensure_env_example apps/indexer-worker/.env.example
+ensure_env_example apps/recommender-svc/.env.example || true
+
 make local-up >/dev/null
 
 log "Waiting for core dependencies to be healthy..."
