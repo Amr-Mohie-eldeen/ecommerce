@@ -12,6 +12,20 @@ ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT_DIR"
 
 log "Bringing up local stack (build + up)..."
+if [[ ! -f .env ]]; then
+  log "No .env found; creating ephemeral one for CI/local runs"
+  cat > .env <<'ENVEOF'
+DB_URL=postgresql+psycopg://app:postgres@postgres:5432/appdb
+REDIS_URL=redis://redis:6379/0
+KAFKA_BOOTSTRAP=kafka:29092
+SCHEMA_REG_URL=http://schema-registry:8081
+OPENSEARCH_URL=http://opensearch:9200
+OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+ENABLE_KAFKA=true
+TOPIC_PRODUCT_UPDATED=events.catalog.product-updated
+TOPIC_ORDER_CREATED=events.orders.order-created
+ENVEOF
+fi
 make local-up >/dev/null
 
 log "Waiting for core dependencies to be healthy..."
