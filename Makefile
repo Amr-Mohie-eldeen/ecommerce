@@ -9,7 +9,8 @@ BLACK_VERSION := 24.4.2
 RUFF_VERSION := 0.5.5
 
 .PHONY: help local-up local-down local-logs local-health seed-data test-local create-topics dev-venv check-apps tools-venv format lint install-git-hooks \
-	catalog-revision catalog-upgrade catalog-downgrade catalog-history catalog-current
+	catalog-revision catalog-upgrade catalog-downgrade catalog-history catalog-current \
+	e2e-local
 
 help:
 	@echo "Targets:"
@@ -31,6 +32,7 @@ help:
 	@echo "  catalog-downgrade STEP=-1 Revert migrations"
 	@echo "  catalog-history   Show migration history"
 	@echo "  catalog-current   Show current DB head"
+	@echo "  e2e-local     Build, start, and verify end-to-end"
 
 local-up:
 	$(DC) up -d --build --remove-orphans
@@ -86,6 +88,10 @@ install-git-hooks:
 	  > .git/hooks/pre-commit
 	@chmod +x .git/hooks/pre-commit
 	@echo "Pre-commit hook installed. Use SKIP format via `git commit --no-verify` if needed."
+
+# ----- End-to-end -----
+e2e-local:
+	bash scripts/e2e_local.sh
 
 # ----- Catalog API DB Migrations (Alembic) -----
 CAT_DIR := apps/catalog-api
