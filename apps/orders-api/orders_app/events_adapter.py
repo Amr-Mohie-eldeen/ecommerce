@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime as dt
+from datetime import datetime, timezone
 import os
 from typing import Any, Dict
 
@@ -19,14 +19,16 @@ _parsed_schema = None
 async def emit_order_created(order: Dict[str, Any]) -> None:
     payload = {
         "event_id": order["id"],
-        "occurred_at": dt.datetime.utcnow().isoformat(),
+        "occurred_at": datetime.now(timezone.utc).isoformat(),
         "order_id": order["id"],
         "customer_id": order["customer_id"],
         "items": order["items"],
         "total_amount": float(order["total_amount"]),
         "currency": order.get("currency", "USD"),
         "status": order.get("status", "CREATED"),
-        "created_at": (order.get("created_at") or dt.datetime.utcnow()).isoformat(),
+        "created_at": (
+            order.get("created_at") or datetime.now(timezone.utc)
+        ).isoformat(),
     }
 
     settings = get_settings()

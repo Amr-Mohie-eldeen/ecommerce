@@ -36,13 +36,13 @@ class SqlAlchemyProductRepository(ProductRepository):
         self, session: AsyncSession, *, name: str, price: float, description: str | None
     ) -> ProductORM:
         pid = f"p-{uuid.uuid4().hex[:8]}"
-        now = dt.datetime.utcnow()
+        now = dt.datetime.now(dt.timezone.utc)
         stmt = insert(ProductORM).values(
             id=pid, name=name, price=price, description=description, updated_at=now
         )
         await session.execute(stmt)
-        # Return entity
-        return ProductORM(id=pid, name=name, price=price, description=description, updated_at=now)  # type: ignore
+        await session.commit()
+        return await self.get(session, pid)  # type: ignore
 
     async def get(self, session: AsyncSession, product_id: str) -> Optional[ProductORM]:
         stmt = select(ProductORM).where(ProductORM.id == product_id).limit(1)
@@ -59,68 +59,53 @@ class SqlAlchemyProductRepository(ProductRepository):
         price: Optional[float] = None,
         description: Optional[str] = None,
     ) -> Optional[ProductORM]:
-        sets = {}
+        updates = {"updated_at": dt.datetime.now(dt.timezone.utc)}
         if name is not None:
-            sets[ProductORM.name] = name
+            updates["name"] = name
         if price is not None:
-            sets[ProductORM.price] = price
+            updates["price"] = price
         if description is not None:
-            sets[ProductORM.description] = description
-        if not sets:
+            updates["description"] = description
+
+        if len(updates) == 1:  # Only updated_at was set
             return await self.get(session, product_id)
-        sets[ProductORM.updated_at] = dt.datetime.utcnow()
-        stmt = (
-            update(ProductORM)
-            .where(ProductORM.id == product_id)
-            .values(**{c.key: v for c, v in sets.items()})
-            .returning(
-                ProductORM.id,
-                ProductORM.name,
-                ProductORM.price,
-                ProductORM.description,
-                ProductORM.updated_at,
-            )
-        )
-        res = await session.execute(stmt)
-        row = res.first()
-        if not row:
-            return None
-        return ProductORM(
-            id=row[0], name=row[1], price=row[2], description=row[3], updated_at=row[4]  # type: ignore
-        )
+
+        stmt = update(ProductORM).where(ProductORM.id == product_id).values(**updates)
+        await session.execute(stmt)
+        await session.commit()
+        return await self.get(session, product_id)
 
 
-# Fallback in-memory repo for environments without DB (e.g., unit tests)
-_MEM_STORE: dict[str, ProductORM] = {}
+_MEM_ITEMS: dict[str, ProductORM] = {}
+_MEM_COUNTER = {"n": 0}
 
 
 class InMemoryProductRepository(ProductRepository):
     def __init__(self):
-        # shared store across instances
-        self._items = _MEM_STORE
+        # Shared in-memory store across instances to persist within process
+        self._items = _MEM_ITEMS
 
     async def create(
         self,
-        session: AsyncSession | None,
+        session: AsyncSession,
         *,
         name: str,
         price: float,
         description: str | None,
     ) -> ProductORM:
-        pid = "p-1" if "p-1" not in self._items else f"p-{len(self._items)+1}"
-        now = dt.datetime.utcnow()
+        _MEM_COUNTER["n"] += 1
+        pid = f"p-{_MEM_COUNTER['n']}"
+        now = dt.datetime.now(dt.timezone.utc)
         item = ProductORM(id=pid, name=name, price=price, description=description, updated_at=now)  # type: ignore
         self._items[pid] = item
         return item
 
-    async def get(
-        self, session: AsyncSession | None, product_id: str
-    ) -> Optional[ProductORM]:
+    async def get(self, session: AsyncSession, product_id: str) -> Optional[ProductORM]:
         return self._items.get(product_id)
 
     async def update(
         self,
-        session: AsyncSession | None,
+        session: AsyncSession,
         product_id: str,
         *,
         name: Optional[str] = None,
@@ -136,5 +121,5 @@ class InMemoryProductRepository(ProductRepository):
             item.price = price  # type: ignore
         if description is not None:
             item.description = description  # type: ignore
-        item.updated_at = dt.datetime.utcnow()  # type: ignore
+        item.updated_at = dt.datetime.now(dt.timezone.utc)  # type: ignore
         return item

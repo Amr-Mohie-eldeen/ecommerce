@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import FastAPI, Response, HTTPException
+from contextlib import asynccontextmanager
 
 from .config import get_settings
 from . import db
@@ -20,7 +21,32 @@ from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    app = FastAPI(title="Orders API", version="1.0.0")
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        try:
+            await db.create_all(Base.metadata)
+        except Exception:
+            pass
+        if settings.otlp_endpoint:
+            try:
+                resource = Resource.create({"service.name": settings.service_name})
+                provider = TracerProvider(resource=resource)
+                trace.set_tracer_provider(provider)
+                exporter = OTLPSpanExporter(
+                    endpoint=settings.otlp_endpoint, insecure=True
+                )
+                provider.add_span_processor(BatchSpanProcessor(exporter))
+                FastAPIInstrumentor.instrument_app(app)
+                SQLAlchemyInstrumentor().instrument(
+                    enable_commenter=True,
+                    commenter_options={"db_framework": "sqlalchemy"},
+                )
+            except Exception:
+                pass
+        yield
+
+    app = FastAPI(title="Orders API", version="1.0.0", lifespan=lifespan)
     app.add_exception_handler(HTTPException, http_exception_handler)
 
     if settings.db_url:
@@ -58,29 +84,5 @@ def create_app() -> FastAPI:
         }
 
     app.include_router(router)
-
-    @app.on_event("startup")
-    async def on_startup():
-        try:
-            await db.create_all(Base.metadata)
-        except Exception:
-            pass
-
-        if settings.otlp_endpoint:
-            try:
-                resource = Resource.create({"service.name": settings.service_name})
-                provider = TracerProvider(resource=resource)
-                trace.set_tracer_provider(provider)
-                exporter = OTLPSpanExporter(
-                    endpoint=settings.otlp_endpoint, insecure=True
-                )
-                provider.add_span_processor(BatchSpanProcessor(exporter))
-                FastAPIInstrumentor.instrument_app(app)
-                SQLAlchemyInstrumentor().instrument(
-                    enable_commenter=True,
-                    commenter_options={"db_framework": "sqlalchemy"},
-                )
-            except Exception:
-                pass
 
     return app

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime as dt
+from datetime import datetime, timezone
 from typing import Any, Dict
 
 from events import publish_product_updated_async
@@ -21,7 +21,7 @@ async def emit_product_updated(product: Dict[str, Any]) -> None:
         "name": product["name"],
         "price": product["price"],
         "description": product.get("description"),
-        "updated_at": int(dt.datetime.utcnow().timestamp() * 1000),
+        "updated_at": int(datetime.now(timezone.utc).timestamp() * 1000),
     }
     settings = get_settings()
     if settings.validate_avro and parse_schema and validate:
@@ -43,13 +43,13 @@ async def emit_product_updated(product: Dict[str, Any]) -> None:
             validate(
                 {
                     "event_id": payload["id"],
-                    "occurred_at": str(dt.datetime.utcnow().isoformat()),
+                    "occurred_at": datetime.now(timezone.utc).isoformat(),
                     "product_id": payload["id"],
                     "name": payload.get("name") or "",
                     "description": payload.get("description") or "",
                     "price": float(payload.get("price") or 0),
                     "stock_qty": 0,
-                    "updated_at": str(dt.datetime.utcnow().isoformat()),
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
                 },
                 _parsed_schema,
             )

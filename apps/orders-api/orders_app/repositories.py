@@ -35,7 +35,7 @@ class SqlAlchemyOrderRepository(OrderRepository):
         items: list[dict],
     ) -> OrderORM:
         oid = f"o-{uuid.uuid4().hex[:8]}"
-        now = dt.datetime.utcnow()
+        now = dt.datetime.now(dt.timezone.utc)
         total = sum(float(i["unit_price"]) * int(i["quantity"]) for i in items)
         await session.execute(
             insert(OrderORM).values(
@@ -106,7 +106,7 @@ class InMemoryOrderRepository(OrderRepository):
         items: list[dict],
     ) -> OrderORM:
         oid = "o-1" if "o-1" not in self._orders else f"o-{len(self._orders)+1}"
-        now = dt.datetime.utcnow()
+        now = dt.datetime.now(dt.timezone.utc)
         total = sum(float(i["unit_price"]) * int(i["quantity"]) for i in items)
         order = OrderORM(id=oid, customer_id=customer_id, currency=currency, total_amount=total, status="CREATED", created_at=now)  # type: ignore
         self._orders[oid] = order

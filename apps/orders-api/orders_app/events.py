@@ -16,6 +16,10 @@ _producer_lock = asyncio.Lock()
 
 
 def kafka_enabled() -> bool:
+    if os.getenv("DISABLE_KAFKA", "").lower() in {"1", "true", "yes", "on"}:
+        return False
+    if os.getenv("PYTEST_CURRENT_TEST"):
+        return False
     return os.getenv("ENABLE_KAFKA", "false").lower() in {"1", "true", "yes", "on"}
 
 
